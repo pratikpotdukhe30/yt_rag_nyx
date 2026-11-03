@@ -43,7 +43,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_chunking(self) -> "Settings":
-        if self.chunk_overlap > self.chunk_size or self.chunk_size < 0:
+        if self.chunk_overlap > self.chunk_size:
             raise ValidationError("Chunk_overlap must be smaller than chunk_size")
         return self
 
