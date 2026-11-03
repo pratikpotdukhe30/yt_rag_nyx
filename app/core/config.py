@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     similarity_threshold: float = Field(default=0.3, ge=0.0, lt=1.0)
 
     #languages
-    supported_language: List[str] = ["en", "it"]
+    supported_languages: List[str] = ["en", "it"]
 
     @model_validator(mode="after")
     def validate_chunking(self) -> "Settings":
