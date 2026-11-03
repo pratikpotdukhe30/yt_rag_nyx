@@ -1,0 +1,19 @@
+# Secrets
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Tools
+.pytest_cache/
+.ruff_cache/
+
+# Local data (rebuilt from source, never versioned)
+chroma_db/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
