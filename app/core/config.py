@@ -31,12 +31,13 @@ class Settings(BaseSettings):
 
     #Embeddings
     embedding_model : str = "intfloat/multilingual-e5-base"
+    embedding_device: Literal["cpu", "cuda"] = "cpu"
 
     #Vector store
     chunk_size: int = Field(default=1024, gt=0)
     chunk_overlap: int = Field(default=200, gt=0)
     top_k: int = Field(default=4, gt=0)
-    similarity_threshold: float = Field(default=0.3, ge=0.0, lt=1.0)
+    similarity_threshold: float = Field(default=0.80, ge=0.0, lt=1.0)
 
     #languages
     supported_languages: List[str] = ["en", "it"]
