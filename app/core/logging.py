@@ -47,7 +47,7 @@ def setup_logging() -> None:
     root.addHandler(handler)
     root.setLevel(settings.log_level)
 
-    for noisy in ("httpx", "httpcore", "urllib3", "chromadb", "openai"):
+    for noisy in ("httpx", "httpcore", "urllib3", "chromadb", "openai", "sentence_transformers", "huggingface_hub"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
 
