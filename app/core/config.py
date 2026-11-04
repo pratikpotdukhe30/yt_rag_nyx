@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     top_k: int = Field(default=4, gt=0)
     similarity_threshold: float = Field(default=0.43, ge=0.0, le=1.0)
 
+    # ---------- Caching ----------
+    cache_enabled: bool = True
+    cache_ttl_seconds: int = Field(default=3600, gt=0)
+
     chroma_persist_dir: str = "./chroma_db"
     #languages
     supported_languages: List[str] = ["en", "it"]

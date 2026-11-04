@@ -8,7 +8,8 @@ from app.rag.prompts import PROMPT_VERSION
 from app.rag.vectorstore import VectorStoreRepository, get_vector_store
 from app.guardrails.input_guard import InputGuard, get_input_guard
 from app.guardrails.output_guard import OutputGuard
-
+from dataclasses import asdict, dataclass, field
+from app.cache.cache import AnswerCache, get_answer_cache
 logger = get_logger(__name__)
 
 # User-facing text lives in the service, per language. The chain only returns None.
@@ -31,28 +32,41 @@ class ChatResult:
     covered: bool
     sources: list[Source] = field(default_factory=list)
 
+    @classmethod
+    def from_dict(cls, d: dict) -> "ChatResult":
+        return cls(answer=d["answer"], covered=d["covered"], sources=[Source(**s) for s in d["sources"]])
+
 
 class ChatService:
-    def __init__(self, store: VectorStoreRepository, input_guard: InputGuard, output_guard: OutputGuard):
+    def __init__(self, store: VectorStoreRepository, input_guard: InputGuard,
+                 output_guard: OutputGuard, cache: AnswerCache):
         self._store = store
         self._input_guard = input_guard
         self._output_guard = output_guard
+        self._cache = cache
 
     async def ask(self, video_id: str, question: str, language: str = "en") -> ChatResult:
-        not_covered = ChatResult(answer=NOT_COVERED.get(language, NOT_COVERED["en"]), covered=False)
-
-        # Cheapest checks first: local lookup → network classifier → retrieval + LLM
         if not self._store.has_video(video_id):
             raise VideoNotIndexedError("Video not indexed yet", details={"video_id": video_id})
 
-        await self._input_guard.check(question)
+        key = self._cache.make_key(video_id, question, language)
+        if (cached := self._cache.get(key)) is not None:
+            logger.info("Cache hit", extra={"extra_fields": {"video_id": video_id}})
+            return ChatResult.from_dict(cached)     # skips guard, retrieval and LLM entirely
+
+        await self._input_guard.check(question)     # only runs on cache misses
+        result = await self._generate(video_id, question, language)
+        self._cache.set(key, asdict(result))        # cache "not covered" too: also saves retrieval
+        return result
+
+    async def _generate(self, video_id: str, question: str, language: str) -> ChatResult:
+        not_covered = ChatResult(answer=NOT_COVERED.get(language, NOT_COVERED["en"]), covered=False)
 
         result = await build_rag_chain(video_id).ainvoke(question)
         if result["answer"] is None:
             return not_covered
-
         if not self._output_guard.is_grounded(result["answer"], result["docs"]):
-            return not_covered               # abstain rather than risk a hallucination
+            return not_covered
 
         sources = [
             Source(
@@ -71,4 +85,4 @@ class ChatService:
 
 @lru_cache
 def get_chat_service() -> ChatService:
-    return ChatService(get_vector_store(), get_input_guard(), OutputGuard())
+    return ChatService(get_vector_store(), get_input_guard(), OutputGuard(), get_answer_cache())

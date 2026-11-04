@@ -21,6 +21,7 @@ class ErrorResponse(BaseModel):
 def error_responses(*codes: int) -> dict:
     # Each route declares which errors it can return → docs = real contract
     desc = {
+        400: "Blocked by safety guardrail",
         404: "Transcript or video not found",
         409: "Video not indexed yet: call /v1/ingest first",
         422: "Invalid input",
