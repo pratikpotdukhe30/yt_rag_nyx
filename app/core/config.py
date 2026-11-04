@@ -61,6 +61,12 @@ class Settings(BaseSettings):
     chroma_persist_dir: str = "./chroma_db"
     #languages
     supported_languages: List[str] = ["en", "it"]
+    # ---------- Rate limiting ----------
+    rate_limit_storage: str = "memory://"     # "redis://localhost:6379" later → shared across instances
+    rate_limit_chat: str = "10/minute"        # costs LLM tokens
+    rate_limit_ingest: str = "5/minute"       # costs CPU (embeddings)
+    rate_limit_poll: str = "60/minute"        # cheap status checks
+
 
     # ---------- Guardrails ----------
     prompt_guard_model: str = "meta-llama/llama-prompt-guard-2-86m"

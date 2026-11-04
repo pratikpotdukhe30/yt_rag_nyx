@@ -5,12 +5,17 @@ from fastapi import APIRouter
 from app.api.deps import ChatServiceDep
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.schemas.common import error_responses
+from fastapi import APIRouter, Depends
+from app.api.rate_limit import RateLimit
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
-
-
-@router.post("", response_model=ChatResponse, responses=error_responses(400, 409, 422, 429, 502, 503))
+@router.post(
+    "",
+    response_model=ChatResponse,
+    responses=error_responses(400, 409, 422, 429, 502, 503),
+    dependencies=[Depends(RateLimit("chat"))],
+)
 async def chat(req: ChatRequest, service: ChatServiceDep) -> ChatResponse:
     # async: waiting on the LLM frees the event loop to serve other users
     result = await service.ask(req.video_id, req.question, req.language)

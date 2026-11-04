@@ -5,10 +5,11 @@ class AppError(Exception):
     status_code : int = 500
     code: str = "internal_server_error"
 
-    def __init__(self, message: str, *, details: dict | None = None):
-        self.details = details or {}
+    def __init__(self, message: str, *, details: dict | None = None, headers: dict[str, str] | None = None):
         super().__init__(message)
         self.message = message
+        self.details = details or {}
+        self.headers = headers or {}  # e.g. Retry-After on 429
 
 class InvalidInputError(AppError):
     status_code = 400
@@ -45,3 +46,4 @@ class VideoNotIndexedError(AppError):
 class JobNotFoundError(AppError):
     status_code = 404
     code = "job_not_found"
+

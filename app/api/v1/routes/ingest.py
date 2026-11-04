@@ -5,7 +5,8 @@ from app.core.exceptions import JobNotFoundError
 from app.schemas.common import error_responses
 from app.schemas.ingest import IngestJobResponse, IngestRequest
 from app.workers.ingest_worker import Job
-
+from fastapi import APIRouter, Depends
+from app.api.rate_limit import RateLimit
 router = APIRouter(prefix="/ingest", tags=["ingest"])
 
 
@@ -16,7 +17,11 @@ def _to_response(job: Job) -> IngestJobResponse:
     )
 
 
-@router.post("", status_code=202, response_model=IngestJobResponse, responses=error_responses(422, 429))
+@router.post(
+    "", status_code=202, response_model=IngestJobResponse,
+    responses=error_responses(422, 429),
+    dependencies=[Depends(RateLimit("ingest"))],
+)
 async def ingest(req: IngestRequest, response: Response, worker: IngestWorkerDep) -> IngestJobResponse:
     # Now `async def`: the route only ENQUEUES (microseconds); heavy work happens in the worker.
     job = worker.submit(req.video_id, req.language)
@@ -24,7 +29,11 @@ async def ingest(req: IngestRequest, response: Response, worker: IngestWorkerDep
     return _to_response(job)
 
 
-@router.get("/{job_id}", response_model=IngestJobResponse, responses=error_responses(404))
+@router.get(
+    "/{job_id}", response_model=IngestJobResponse,
+    responses=error_responses(404, 429),
+    dependencies=[Depends(RateLimit("poll"))],
+)
 async def get_job(job_id: str, worker: IngestWorkerDep) -> IngestJobResponse:
     job = worker.get(job_id)
     if job is None:

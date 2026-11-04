@@ -19,7 +19,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def handle_app_error(request: Request, exc: AppError) -> JSONResponse:
         # details go to LOGS (for us), only message goes to the CLIENT
         logger.warning(exc.message, extra={"extra_fields": {"code": exc.code, **exc.details}})
-        return JSONResponse(status_code=exc.status_code, content=error_body(exc.code, exc.message))
+        return JSONResponse(status_code=exc.status_code, content=error_body(exc.code, exc.message), headers=exc.headers)
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation(request: Request, exc: RequestValidationError) -> JSONResponse:
