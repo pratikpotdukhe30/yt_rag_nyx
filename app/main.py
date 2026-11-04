@@ -13,7 +13,10 @@ from app.workers.ingest_worker import get_ingest_worker
 from app.observability.tracing import configure_tracing
 from app.rag.llm import check_llms, get_llm
 from app.rag.embeddings import get_embeddings
-
+from prometheus_client import make_asgi_app
+from app.observability.metrics import OPENAI_CIRCUIT_OPEN
+from app.rag.llm import check_llms, get_llm, get_openai_breaker
+from app.resilience.circuit_breaker import State
 logger = get_logger(__name__)
 
 @asynccontextmanager
@@ -24,7 +27,8 @@ async def lifespan(app: FastAPI):
     get_vector_store()
     get_embeddings().embed_query("warm up")   # ← new line
     get_llm()
-
+    # Pull-based: value computed when Prometheus scrapes, breaker code stays metrics-free
+    OPENAI_CIRCUIT_OPEN.set_function(lambda: 1 if get_openai_breaker().state is State.OPEN else 0)
     app.state.llm_status = await check_llms()
     logger.info("LLM status", extra={"extra_fields": app.state.llm_status})
     if not any(app.state.llm_status.values()):
@@ -48,6 +52,7 @@ def create_app() -> FastAPI:
     v1.include_router(ingest.router)
     v1.include_router(chat.router)
     app.include_router(v1)
+    app.mount("/metrics", make_asgi_app())
     return app
 
 

@@ -18,6 +18,7 @@ dependencies = [
     "limits>=5.8.0",
     "numpy>=2.5.4",
     "openai>=3.45.0",
+    "prometheus-client>=0.26.0",
     "pydantic-settings>=2.16.2",
     "sentence-transformers>=6.2.0",
     "youtube-transcript-api>=1.2.4",

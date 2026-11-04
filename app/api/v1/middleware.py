@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.errors import error_body
 from app.core.logging import get_logger, request_id_ctx
-
+from app.observability.metrics import HTTP_LATENCY
 logger = get_logger(__name__)
 
 
@@ -24,6 +24,10 @@ async def request_context_middleware(request: Request, call_next):
         response = JSONResponse(status_code=500, content=error_body("internal_error", "Internal server error"))
 
     duration_ms = round((time.perf_counter() - start) * 1000, 1)
+
+    endpoint = request.scope.get("endpoint")
+    handler = endpoint.__name__ if endpoint else "unmatched"  # never the raw path (cardinality!)
+    HTTP_LATENCY.labels(request.method, handler, str(response.status_code)).observe(duration_ms / 1000)
     response.headers["X-Request-ID"] = request_id   # client can report this ID in bug reports
     logger.info(
         "Request completed",

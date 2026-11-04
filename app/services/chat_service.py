@@ -10,6 +10,7 @@ from app.guardrails.input_guard import InputGuard, get_input_guard
 from app.guardrails.output_guard import OutputGuard
 from dataclasses import asdict, dataclass, field
 from app.cache.cache import AnswerCache, get_answer_cache
+from app.observability.metrics import CACHE_LOOKUPS, CHAT_OUTCOMES, GUARD_BLOCKS, llm_metrics_callback
 logger = get_logger(__name__)
 
 # User-facing text lives in the service, per language. The chain only returns None.
@@ -51,8 +52,10 @@ class ChatService:
 
         key = self._cache.make_key(video_id, question, language)
         if (cached := self._cache.get(key)) is not None:
+            CACHE_LOOKUPS.labels("hit").inc()
             logger.info("Cache hit", extra={"extra_fields": {"video_id": video_id}})
-            return ChatResult.from_dict(cached)     # skips guard, retrieval and LLM entirely
+            return ChatResult.from_dict(cached)
+        CACHE_LOOKUPS.labels("miss").inc()
 
         await self._input_guard.check(question)     # only runs on cache misses
         result = await self._generate(video_id, question, language)
@@ -65,20 +68,25 @@ class ChatService:
         result = await build_rag_chain(video_id).ainvoke(
             question,
             config={
-                "run_name": "youtube_rag_chat",  # readable name in LangSmith
-                "tags": [PROMPT_VERSION],  # filter traces by prompt version
+                "run_name": "youtube_rag_chat",
+                "tags": [PROMPT_VERSION],
                 "metadata": {
                     "video_id": video_id,
                     "language": language,
-                    "request_id": request_id_ctx.get(),  # ← links trace ↔ logs ↔ user report
+                    "request_id": request_id_ctx.get(),
                 },
+                "callbacks": [llm_metrics_callback],  # ← fires on every LLM call (OpenAI or Groq)
             },
         )
 
         if result["answer"] is None:
+            CHAT_OUTCOMES.labels("not_covered").inc()
             return not_covered
         if not self._output_guard.is_grounded(result["answer"], result["docs"]):
+            CHAT_OUTCOMES.labels("ungrounded").inc()
+            GUARD_BLOCKS.labels("output").inc()
             return not_covered
+        CHAT_OUTCOMES.labels("answered").inc()
 
         sources = [
             Source(

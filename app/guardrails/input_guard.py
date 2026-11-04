@@ -6,6 +6,7 @@ from langchain_groq import ChatGroq
 from app.core.config import get_settings
 from app.core.exceptions import GuardrailViolationError, ServiceUnavailableError
 from app.core.logging import get_logger
+from app.observability.metrics import GUARD_BLOCKS
 
 logger = get_logger(__name__)
 
@@ -28,6 +29,7 @@ class InputGuard:
 
         if score >= self._threshold:
             # details (score) go to logs only; user gets a neutral message (don't teach attackers)
+            GUARD_BLOCKS.labels("input").inc()
             raise GuardrailViolationError(
                 "This question can't be processed.", details={"guard_score": round(score, 4)}
             )
