@@ -30,15 +30,21 @@ class Settings(BaseSettings):
     llm_max_retries: int = Field(default=3, gt=0)
 
     #Embeddings
-    embedding_model : str = "intfloat/multilingual-e5-base"
+    #embedding_model : str = "intfloat/multilingual-e5-base"
+    #embedding_device: Literal["cpu", "cuda"] = "cpu"
+
+    embedding_model: str = "BAAI/bge-m3"
     embedding_device: Literal["cpu", "cuda"] = "cpu"
+    embedding_query_prefix: str = ""  # e5 needed "query: ", bge-m3 needs none
+    embedding_doc_prefix: str = ""  # e5 needed "passage:
 
     #Vector store
     chunk_size: int = Field(default=1024, gt=0)
     chunk_overlap: int = Field(default=200, gt=0)
     top_k: int = Field(default=4, gt=0)
-    similarity_threshold: float = Field(default=0.80, ge=0.0, lt=1.0)
+    similarity_threshold: float = Field(default=0.43, ge=0.0, le=1.0)
 
+    chroma_persist_dir: str = "./chroma_db"
     #languages
     supported_languages: List[str] = ["en", "it"]
 

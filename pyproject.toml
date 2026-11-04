@@ -5,9 +5,10 @@ description = "Add your description here"
 authors = [
     { name = "pratikpotdukhe30", email = "pratikpotdukhe2000@gmail.com" }
 ]
-requires-python = ">=3.15"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "langchain>=1.4.8",
+    "langchain-chroma>=1.1.0",
     "langchain-core>=1.7.4",
     "langchain-huggingface>=1.2.3",
     "langchain-text-splitters>=1.1.3",

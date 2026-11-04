@@ -9,6 +9,7 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 
 
+# build/get the model (no text yet)
 @lru_cache
 def get_embeddings() -> Embeddings:
     settings = get_settings()
@@ -22,12 +23,11 @@ def get_embeddings() -> Embeddings:
         # Used by embed_documents() → chunks at ingestion time
         encode_kwargs={
             "normalize_embeddings": True,
-            "prompt": "passage: ",      # e5 training convention for documents
+            "prompt": settings.embedding_doc_prefix,
             "batch_size": 32,
         },
-        # Used by embed_query() → user questions at chat time
         query_encode_kwargs={
             "normalize_embeddings": True,
-            "prompt": "query: ",        # e5 training convention for questions
+            "prompt": settings.embedding_query_prefix,
         },
     )
