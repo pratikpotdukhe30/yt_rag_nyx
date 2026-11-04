@@ -10,7 +10,7 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 
 
-@router.post("", response_model=ChatResponse, responses=error_responses(409, 422, 429, 502, 503))
+@router.post("", response_model=ChatResponse, responses=error_responses(400, 409, 422, 429, 502, 503))
 async def chat(req: ChatRequest, service: ChatServiceDep) -> ChatResponse:
     # async: waiting on the LLM frees the event loop to serve other users
     result = await service.ask(req.video_id, req.question, req.language)

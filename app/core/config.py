@@ -55,6 +55,11 @@ class Settings(BaseSettings):
     #languages
     supported_languages: List[str] = ["en", "it"]
 
+    # ---------- Guardrails ----------
+    prompt_guard_model: str = "meta-llama/llama-prompt-guard-2-86m"
+    prompt_guard_threshold: float = Field(default=0.5, ge=0.0, le=1.0)
+    guard_fail_open: bool = True     # guard down → allow + log (availability over strictness)
+
     @model_validator(mode="after")
     def validate_chunking(self) -> "Settings":
         if self.chunk_overlap > self.chunk_size:

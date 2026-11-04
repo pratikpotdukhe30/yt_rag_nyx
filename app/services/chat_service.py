@@ -6,6 +6,8 @@ from app.core.logging import get_logger
 from app.rag.chain import build_rag_chain
 from app.rag.prompts import PROMPT_VERSION
 from app.rag.vectorstore import VectorStoreRepository, get_vector_store
+from app.guardrails.input_guard import InputGuard, get_input_guard
+from app.guardrails.output_guard import OutputGuard
 
 logger = get_logger(__name__)
 
@@ -31,21 +33,26 @@ class ChatResult:
 
 
 class ChatService:
-    def __init__(self, store: VectorStoreRepository):
+    def __init__(self, store: VectorStoreRepository, input_guard: InputGuard, output_guard: OutputGuard):
         self._store = store
+        self._input_guard = input_guard
+        self._output_guard = output_guard
 
     async def ask(self, video_id: str, question: str, language: str = "en") -> ChatResult:
-        # Pipeline order (slots marked for upcoming steps):
-        # [input guardrail] → [cache lookup] → retrieve + generate → [output guardrail] → [cache store]
+        not_covered = ChatResult(answer=NOT_COVERED.get(language, NOT_COVERED["en"]), covered=False)
 
+        # Cheapest checks first: local lookup → network classifier → retrieval + LLM
         if not self._store.has_video(video_id):
             raise VideoNotIndexedError("Video not indexed yet", details={"video_id": video_id})
 
-        chain = build_rag_chain(video_id)          # cheap: just wires Runnables, no model loading
-        result = await chain.ainvoke(question)     # async → the server keeps serving others while waiting
+        await self._input_guard.check(question)
 
+        result = await build_rag_chain(video_id).ainvoke(question)
         if result["answer"] is None:
-            return ChatResult(answer=NOT_COVERED.get(language, NOT_COVERED["en"]), covered=False)
+            return not_covered
+
+        if not self._output_guard.is_grounded(result["answer"], result["docs"]):
+            return not_covered               # abstain rather than risk a hallucination
 
         sources = [
             Source(
@@ -64,4 +71,4 @@ class ChatService:
 
 @lru_cache
 def get_chat_service() -> ChatService:
-    return ChatService(get_vector_store())
+    return ChatService(get_vector_store(), get_input_guard(), OutputGuard())
