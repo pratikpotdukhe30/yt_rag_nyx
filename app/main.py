@@ -9,9 +9,9 @@ from app.core.config import get_settings
 from app.core.logging import get_logger, setup_logging
 from app.rag.llm import get_llm
 from app.rag.vectorstore import get_vector_store
+from app.workers.ingest_worker import get_ingest_worker
 
 logger = get_logger(__name__)
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -22,6 +22,7 @@ async def lifespan(app: FastAPI):
     logger.info("Application started", extra={"extra_fields": {"env": get_settings().env}})
     yield
     # Runs once at shutdown: place to close connections, flush metrics
+    get_ingest_worker().shutdown()
     logger.info("Application stopped")
 
 

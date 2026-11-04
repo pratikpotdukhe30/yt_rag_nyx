@@ -13,3 +13,13 @@ class IngestResponse(BaseModel):
     already_indexed: bool
     chunks: int
     language: str | None
+
+from typing import Literal
+
+
+class IngestJobResponse(BaseModel):
+    job_id: str
+    video_id: str
+    status: Literal["pending", "running", "completed", "failed"]
+    result: IngestResponse | None = None
+    error: dict[str, str] | None = None

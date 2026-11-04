@@ -41,3 +41,7 @@ class ServiceUnavailableError(AppError):
 class VideoNotIndexedError(AppError):
     status_code = 409          # "conflict with current state": client must ingest first
     code = "video_not_indexed"
+
+class JobNotFoundError(AppError):
+    status_code = 404
+    code = "job_not_found"

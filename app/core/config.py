@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     cache_enabled: bool = True
     cache_ttl_seconds: int = Field(default=3600, gt=0)
 
+    # ---------- Workers ----------
+    ingest_max_workers: int = Field(default=2, gt=0)  # backpressure: max concurrent embeddings
+
     chroma_persist_dir: str = "./chroma_db"
     #languages
     supported_languages: List[str] = ["en", "it"]
