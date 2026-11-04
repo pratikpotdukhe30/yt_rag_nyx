@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YouTube RAG Chat</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header>
+    <strong>Ask this video</strong>
+    <select id="lang" aria-label="Answer language">
+      <option value="en">EN</option>
+      <option value="it">IT</option>
+    </select>
+  </header>
+
+  <p id="status" class="status">Loading…</p>
+  <main id="messages" aria-live="polite"></main>
+
+  <form id="form">
+    <!-- maxlength mirrors the API limit: instant feedback (UX); the server still enforces it (security) -->
+    <textarea id="input" rows="2" maxlength="500" placeholder="Ask about this video…" disabled></textarea>
+    <button id="send" type="submit" disabled>Send</button>
+  </form>
+
+  <!-- MV3 forbids inline scripts; modules let us split API client and UI -->
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>

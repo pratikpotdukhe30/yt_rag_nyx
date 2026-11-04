@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube RAG Chat",
+  "version": "0.1.0",
+  "description": "Ask questions about the YouTube video you're watching.",
+  "permissions": ["sidePanel", "scripting"],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "http://127.0.0.1:8000/*"
+  ],
+  "background": { "service_worker": "background.js" },
+  "side_panel": { "default_path": "sidepanel.html" },
+  "action": { "default_title": "Ask this video" }
+}
