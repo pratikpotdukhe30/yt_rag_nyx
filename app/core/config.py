@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
     #LLM
+    # ---------- Resilience ----------
+    openai_base_url: str | None = None          # None = official API; lets us simulate outages in tests
+    breaker_failure_threshold: int = Field(default=3, gt=0)
+    breaker_recovery_seconds: float = Field(default=30.0, gt=0)
     openai_api_key: SecretStr
     openai_model: str = "gpt-4o-mini"
     #hf_api_token: SecretStr
