@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     # ---------- Caching ----------
     cache_enabled: bool = True
     cache_ttl_seconds: int = Field(default=3600, gt=0)
-
+    cache_redis_url: str | None = None  # None = in-memory (dev); "redis://redis:6379/1" in Docker
     # ---------- Workers ----------
     ingest_max_workers: int = Field(default=2, gt=0)  # backpressure: max concurrent embeddings
 

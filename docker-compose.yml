@@ -1,0 +1,50 @@
+services:
+  api:
+    build: .
+    env_file: .env                         # secrets injected at runtime, never baked into the image
+    environment:
+      ENV: prod                            # → JSON logs
+      LOG_LEVEL: INFO
+      CHROMA_PERSIST_DIR: /app/chroma_db
+      RATE_LIMIT_STORAGE: redis://redis:6379/0
+      CACHE_REDIS_URL: redis://redis:6379/1
+    ports:
+      - "8000:8000"                        # extension still talks to http://127.0.0.1:8000
+    volumes:
+      - ./chroma_db:/app/chroma_db         # reuse videos you already indexed
+      - ${USERPROFILE}/.cache/huggingface:/home/appuser/.cache/huggingface   # reuse the 2.2 GB model
+    depends_on:
+      redis:
+        condition: service_healthy         # wait until Redis answers, not just started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 120s                   # model load + warm-up + LLM pings
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.0.0
+    volumes:
+      - ./ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  redis_data:

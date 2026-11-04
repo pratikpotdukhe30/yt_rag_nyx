@@ -60,6 +60,14 @@ class AnswerCache:
 @lru_cache
 def get_answer_cache() -> AnswerCache:
     s = get_settings()
-    from app.rag.prompts import PROMPT_VERSION   # wiring only; the cache class itself knows nothing about RAG
+    from app.rag.prompts import PROMPT_VERSION
     namespace = f"{PROMPT_VERSION}:{s.openai_model}:{s.embedding_model}"
-    return AnswerCache(InMemoryByteStore(), s.cache_ttl_seconds, namespace, s.cache_enabled)
+
+    if s.cache_redis_url:
+        # Same BaseStore interface → AnswerCache code is untouched. Shared across restarts/instances.
+        from langchain_community.storage import RedisStore
+        store = RedisStore(redis_url=s.cache_redis_url, ttl=s.cache_ttl_seconds, namespace="answers")
+    else:
+        store = InMemoryByteStore()
+
+    return AnswerCache(store, s.cache_ttl_seconds, namespace, s.cache_enabled)

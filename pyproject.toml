@@ -10,17 +10,20 @@ dependencies = [
     "fastapi>=0.162.0",
     "langchain>=1.4.8",
     "langchain-chroma>=1.1.0",
+    "langchain-community>=0.4.2",
     "langchain-core>=1.7.4",
     "langchain-groq>=1.1.3",
     "langchain-huggingface>=1.2.3",
     "langchain-openai>=1.7.3",
     "langchain-text-splitters>=1.1.3",
-    "limits>=5.8.0",
+    "limits[redis]>=5.8.0",
     "numpy>=2.5.4",
     "openai>=3.45.0",
     "prometheus-client>=0.26.0",
     "pydantic-settings>=2.16.2",
+    "redis>=7.4.1",
     "sentence-transformers>=6.2.0",
+    "torch>=2.15.0",
     "youtube-transcript-api>=1.2.4",
 ]
 
@@ -39,3 +42,12 @@ package = false
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"   # each test gets a fresh event loop → no leaked state
+
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true            # ONLY torch comes from this index; everything else from PyPI

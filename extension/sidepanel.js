@@ -105,19 +105,21 @@ async function loadActiveTab() {
   setReady(false);
   setStatus("Preparing video…");
 
-  try {
-    // Idempotent backend: already-indexed videos complete almost instantly
+    try {
     const job = await ingest(id, els.lang.value);
     const done = job.status === "completed"
       ? job
       : await waitForJob(job.job_id, (s) => setStatus(`Indexing video… (${s})`));
 
-    if (state.videoId !== id) return;          // user switched video meanwhile → drop stale result
+    if (state.videoId !== id) return;
     setStatus(done.result?.already_indexed ? "Ready." : `Ready (${done.result.chunks} sections indexed).`);
     setReady(true);
     els.input.focus();
   } catch (e) {
-    if (state.videoId === id) setStatus(friendly(e));
+    if (state.videoId === id) {
+      setStatus(friendly(e));
+      state.videoId = null;
+    }
   }
 }
 
