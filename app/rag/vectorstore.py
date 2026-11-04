@@ -19,12 +19,11 @@ class VectorStoreRepository:
     def __init__(self, store: Chroma):
         self._store = store
 
-    def has_video(self, video_id: str, language: str) -> bool:
-        result = self._store.get(
-            where={"$and": [{"video_id": video_id}, {"language": language}]},
-            limit=1,
-            include=[],
-        )
+    def has_video(self, video_id: str, language: str | None = None) -> bool:
+        where = {"video_id": video_id}
+        if language:
+            where = {"$and": [{"video_id": video_id}, {"language": language}]}
+        result = self._store.get(where=where, limit=1, include=[])
         return len(result["ids"]) > 0
 
     def add(self, docs: list[Document]) -> None:

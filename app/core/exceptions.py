@@ -37,3 +37,7 @@ class UpstreamServiceError(AppError):
 class ServiceUnavailableError(AppError):
     status_code = 503
     code = "service_unavailable"
+
+class VideoNotIndexedError(AppError):
+    status_code = 409          # "conflict with current state": client must ingest first
+    code = "video_not_indexed"
