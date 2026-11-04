@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from functools import lru_cache
-
+from app.core.logging import get_logger, request_id_ctx
 from app.core.exceptions import VideoNotIndexedError
 from app.core.logging import get_logger
 from app.rag.chain import build_rag_chain
@@ -62,7 +62,19 @@ class ChatService:
     async def _generate(self, video_id: str, question: str, language: str) -> ChatResult:
         not_covered = ChatResult(answer=NOT_COVERED.get(language, NOT_COVERED["en"]), covered=False)
 
-        result = await build_rag_chain(video_id).ainvoke(question)
+        result = await build_rag_chain(video_id).ainvoke(
+            question,
+            config={
+                "run_name": "youtube_rag_chat",  # readable name in LangSmith
+                "tags": [PROMPT_VERSION],  # filter traces by prompt version
+                "metadata": {
+                    "video_id": video_id,
+                    "language": language,
+                    "request_id": request_id_ctx.get(),  # ← links trace ↔ logs ↔ user report
+                },
+            },
+        )
+
         if result["answer"] is None:
             return not_covered
         if not self._output_guard.is_grounded(result["answer"], result["docs"]):

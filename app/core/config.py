@@ -73,6 +73,11 @@ class Settings(BaseSettings):
     prompt_guard_threshold: float = Field(default=0.5, ge=0.0, le=1.0)
     guard_fail_open: bool = True     # guard down → allow + log (availability over strictness)
 
+    # ---------- Observability ----------
+    langsmith_tracing: bool = False
+    langsmith_api_key: SecretStr | None = None
+    langsmith_project: str = "youtube-rag-dev"
+
     @model_validator(mode="after")
     def validate_chunking(self) -> "Settings":
         if self.chunk_overlap > self.chunk_size:

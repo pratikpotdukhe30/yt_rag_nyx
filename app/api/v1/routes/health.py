@@ -1,5 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
+from app.rag.llm import get_openai_breaker
 from app.rag.vectorstore import get_vector_store
 
 router = APIRouter(tags=["health"])
@@ -11,7 +12,10 @@ async def health() -> dict:
 
 
 @router.get("/ready")
-def ready() -> dict:
-    # Readiness: dependencies usable. LLM pings get added here in the observability step.
-    get_vector_store().has_video("___________")   # cheap query proves Chroma + embeddings work
-    return {"status": "ready"}
+def ready(request: Request) -> dict:
+    get_vector_store().has_video("___________")          # live, cheap, local
+    return {
+        "status": "ready",
+        "llm": request.app.state.llm_status,               # from the startup check, no token cost
+        "openai_breaker": get_openai_breaker().state.value, # live: closed / open / half_open
+    }

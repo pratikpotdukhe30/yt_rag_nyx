@@ -7,6 +7,7 @@ from openai import APIConnectionError, APITimeoutError, InternalServerError, Rat
 from app.resilience.circuit_breaker import CircuitBreaker, CircuitOpenError, with_circuit_breaker
 from app.core.config import Settings, get_settings
 from app.core.logging import get_logger
+import asyncio
 
 logger = get_logger(__name__)
 
@@ -43,7 +44,7 @@ def get_llm() -> Runnable:
         failure_threshold=settings.breaker_failure_threshold,
         recovery_seconds=settings.breaker_recovery_seconds,
     )
-    primary = with_circuit_breaker(_build_primary(settings), breaker, _FALLBACK_ON)
+    primary = with_circuit_breaker(_build_primary(settings), get_openai_breaker(), _FALLBACK_ON)
     logger.info(
         "LLM configured",
         extra={"extra_fields": {"primary": settings.openai_model, "fallback": settings.groq_fallback_model}},
@@ -52,3 +53,24 @@ def get_llm() -> Runnable:
         [_build_fallback(settings)],
         exceptions_to_handle=_FALLBACK_ON + (CircuitOpenError,),   # open circuit → straight to Groq
     )
+
+@lru_cache
+def get_openai_breaker() -> CircuitBreaker:
+    s = get_settings()
+    return CircuitBreaker("openai", s.breaker_failure_threshold, s.breaker_recovery_seconds)
+
+async def check_llms() -> dict[str, bool]:
+    """Ping each provider ONCE (at startup). Runs both concurrently → total time = slowest, not sum."""
+    s = get_settings()
+    models = {"primary": _build_primary(s), "fallback": _build_fallback(s)}
+
+    async def ping(name: str, model) -> tuple[str, bool]:
+        try:
+            await model.ainvoke("Reply with: ok")
+            return name, True
+        except Exception as e:
+            logger.warning("LLM check failed", extra={"extra_fields": {"llm": name, "error": type(e).__name__}})
+            return name, False
+
+    results = await asyncio.gather(*(ping(n, m) for n, m in models.items()))
+    return dict(results)
