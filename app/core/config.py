@@ -22,8 +22,11 @@ class Settings(BaseSettings):
     #LLM
     openai_api_key: SecretStr
     openai_model: str = "gpt-4o-mini"
-    hf_api_token: SecretStr
-    hf_fallback_model : str = "Qwen/Qwen2.5-7B-Instruct"
+    #hf_api_token: SecretStr
+    #hf_fallback_model : str = "openai/gpt-oss-20b"
+
+    groq_api_key: SecretStr  # fallback provider (independent of OpenAI)
+    groq_fallback_model: str = "openai/gpt-oss-20b"
 
 
     llm_timeout_seconds : float = Field(default=30.0, gt=0)
