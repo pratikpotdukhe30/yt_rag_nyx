@@ -55,6 +55,25 @@ flowchart LR
     CHAIN -.->|traces| LS
 ```
 
+## Working flow 
+
+```mermaid
+flowchart TB
+  subgraph A["1 · Ingestion (once per video)"]
+    direction LR
+    A1["YouTube transcript"] --> A2["Split into chunks<br/>(keep timestamps)"] --> A3["Embed with bge-m3"] --> A4[("Chroma<br/>vector DB")]
+  end
+  subgraph B["2 · Question (every chat)"]
+    direction LR
+    B1["User question<br/>(Chrome side panel)"] --> B2{"Redis<br/>cache hit?"}
+    B2 -- yes --> B9["Answer in ~20 ms"]
+    B2 -- no --> B3["Input guard<br/>blocks injection"] --> B4["Retrieve top chunks<br/>above threshold"] --> B5["LLM answers<br/>GPT-4o-mini → Groq fallback"] --> B6["Output guard<br/>timestamps must be real"] --> B7["Answer + clickable [mm:ss]"]
+  end
+  A4 -. used by .-> B4
+```
+
+Around this core: rate limiting, Pydantic validation, Prometheus metrics, LangSmith tracing, 24 pytest tests, all running in Docker Compose.
+
 ### Request flow: chat
 
 1. **Validation** at the boundary (Pydantic): video ID format, question length, language.
