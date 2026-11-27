@@ -67,9 +67,9 @@ flowchart TB
     direction LR
     B1["User question<br/>(Chrome side panel)"] --> B2{"Redis<br/>cache hit?"}
     B2 -- yes --> B9["Answer in ~20 ms"]
-    B2 -- no --> B3["Input guard<br/>blocks injection"] --> B4["Retrieve top chunks<br/>above threshold"] --> B5["LLM answers<br/>GPT-4o-mini → Groq fallback"] --> B6["Output guard<br/>timestamps must be real"] --> B7["Answer + clickable [mm:ss]"]
+    B2 -- no --> B3["Input guard<br/>blocks injection"] --> B4["Retrieve top chunks<br/>from Chroma"] --> B5["LLM answers<br/>GPT-4o-mini → Groq fallback"] --> B6["Output guard<br/>timestamps must be real"] --> B7["Answer + clickable [mm:ss]"]
   end
-  A4 -. used by .-> B4
+  A -. chunks stored in Chroma are searched at question time .-> B
 ```
 
 Around this core: rate limiting, Pydantic validation, Prometheus metrics, LangSmith tracing, 24 pytest tests, all running in Docker Compose.
